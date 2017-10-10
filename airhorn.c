@@ -1,14 +1,4 @@
-#include <X11/Xutil.h>
-#include <X11/Xlib-xcb.h>
-#include <X11/Xutil.h>
-#include <xcb/xcb_aux.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <err.h>
-
-#include <math.h>
+#include "airhorn.h"
 
 void setup(xcb_connection_t *connection) {
 	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
@@ -17,13 +7,12 @@ void setup(xcb_connection_t *connection) {
                                     };
 	xcb_drawable_t draw = screen->root;
 	xcb_change_window_attributes(connection, draw, XCB_CW_EVENT_MASK, keypress_masks);
-	//
-	//xcb_aux_sync(connection);
-	//if (xcb_poll_for_event(connection) != NULL)
-	//{
-	//	perror("another window manager is already running");
-	//	exit(1);
-	//};
+	xcb_aux_sync(connection);
+	if (xcb_poll_for_event(connection) != NULL)
+	{
+		perror("another window manager is already running");
+		exit(1);
+	};
 	xcb_map_window(connection, draw);
         xcb_flush(connection);
 }
@@ -37,6 +26,9 @@ int main(int argc, char *argv[]) {
 		switch(e->response_type & ~0x80) {
 			case XCB_BUTTON_PRESS:
 				printf("It is work.\n");
+				break;
+			case XCB_KEY_PRESS:
+				printf("go key\n");
 				break;
 			default:
 				printf("it is no work.\n");
