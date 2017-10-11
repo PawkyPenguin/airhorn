@@ -1,19 +1,14 @@
 #include "airhorn.h"
 
 void setup(xcb_connection_t *connection) {
+	xcb_generic_error_t *err;
 	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
-        uint32_t keypress_masks[] = { XCB_EVENT_MASK_EXPOSURE       | XCB_EVENT_MASK_BUTTON_PRESS   |
-                                    XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION
-                                    };
-	xcb_drawable_t draw = screen->root;
-	xcb_change_window_attributes(connection, draw, XCB_CW_EVENT_MASK, keypress_masks);
-	xcb_aux_sync(connection);
-	if (xcb_poll_for_event(connection) != NULL)
-	{
-		perror("another window manager is already running");
+	xcb_grab_pointer_cookie_t grab_cookie = xcb_grab_pointer(connection, True, screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_TIME_CURRENT_TIME);
+	xcb_grab_pointer_reply_t *reply = xcb_grab_pointer_reply(connection, grab_cookie, &err);
+	if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
+		perror("could not grab pointer");
 		exit(1);
-	};
-	xcb_map_window(connection, draw);
+	}
         xcb_flush(connection);
 }
 
@@ -30,9 +25,13 @@ int main(int argc, char *argv[]) {
 			case XCB_KEY_PRESS:
 				printf("go key\n");
 				break;
+			case XCB_MOTION_NOTIFY:
+				printf("pointer motion\n");
+				break;
 			default:
-				printf("it is no work.\n");
 				break;
 		}
+		free(e);
 	}
+	xcb_ungrab_pointer(connection, XCB_TIME_CURRENT_TIME);
 }
