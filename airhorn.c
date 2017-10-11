@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 	}  
 	free(error);
 	do {
+		sleep(0.05);
 		// Replay button press events
 		xcb_allow_events(connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
 		// Poll asynchronously. Unfortunately I didn't find out how to have this work with waiting synchronously because the xcb manual is too good for mere humans to comprehend.
