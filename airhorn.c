@@ -1,72 +1,46 @@
 #include "airhorn.h"
-
-void setup(xcb_connection_t *connection) {
-	xcb_generic_error_t *err;
-	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
-	//xcb_void_cookie_t grab_cookie = xcb_grab_button(connection, True, screen->root, XCB_NONE, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-	//xcb_generic_error_t *error = xcb_request_check(connection, grab_cookie);
-	//if (error != NULL) {
-	//	xcb_disconnect(connection);
-	//	perror("could not subscribe to events on a window, bailing out");
-	//	exit(1);
-	//}  
-	//status = XGrabPointer(dpy, root, False,
-	//		ButtonPressMask|ButtonReleaseMask, GrabModeSync,
-	//		GrabModeAsync, root, cursor, CurrentTime);
-	//if (status != GrabSuccess) {
-	//	fprintf(stderr, "%s: Can't grab the mouse.\n", ProgramName);
-	//	exit(1);
-	//}
-
-	/* Let the user select a window... */
-
-	//free(error);
-        xcb_flush(connection);
-}
+#define EVENT_MASK ~0x80
 
 int main(int argc, char *argv[]) {
-	XEvent event;
+	// Setup xcb connection
 	xcb_generic_event_t *e;
-	Display *dpy = XOpenDisplay(NULL);
-	xcb_connection_t *connection = XGetXCBConnection(dpy);
-	//setup(connection);
+	xcb_generic_error_t *err;
+	xcb_connection_t *connection = xcb_connect(NULL, NULL);
 	xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
-	u_int32_t status = XGrabPointer(dpy, screen->root, False,
-			ButtonPressMask|ButtonReleaseMask, GrabModeSync,
-			GrabModeAsync, screen->root, 0, CurrentTime);
-	if (status != GrabSuccess) {
-		perror("can't grab.\n");
+	// Grab left mouse button
+	xcb_void_cookie_t grab_cookie = xcb_grab_button_checked(connection, True, screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+	// Do some error handling
+	xcb_generic_error_t *error = xcb_request_check(connection, grab_cookie);
+	if (error != NULL) {
+		xcb_disconnect(connection);
+		perror("could not subscribe to events on a window, bailing out");
 		exit(1);
-	}
-
-	XAllowEvents(dpy, SyncPointer, CurrentTime);
+	}  
+	free(error);
 	do {
-		/* allow one more event */
-		XAllowEvents(dpy, SyncPointer, CurrentTime);
-		XWindowEvent(dpy, screen->root, ButtonPressMask|ButtonReleaseMask, &event);
-		switch (event.type) {
-			case ButtonPress:
-				printf("Hey.\n");
+		// Replay button press events
+		xcb_allow_events(connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
+		// Poll asynchronously. Unfortunately I didn't find out how to have this work with waiting synchronously because the xcb manual is too good for mere humans to comprehend.
+		e = xcb_poll_for_event(connection);
+		if(!e) {
+			continue;
+		}
+		// Handle events within the application
+		switch(e->response_type & EVENT_MASK) {
+			case XCB_BUTTON_RELEASE:
+			case XCB_BUTTON_PRESS:
+				printf("It is work.\n");
 				break;
-			case ButtonRelease:
+			case XCB_KEY_PRESS:
+				printf("go key\n");
+				break;
+			case XCB_MOTION_NOTIFY:
+				printf("pointer motion\n");
+				break;
+			default:
 				break;
 		}
+		free(e);
 	} while(1);
-	//while ((e = xcb_wait_for_event(connection))) {
-	//	switch(e->response_type & ~0x80) {
-	//		case XCB_BUTTON_PRESS:
-	//			printf("It is work.\n");
-	//			break;
-	//		case XCB_KEY_PRESS:
-	//			printf("go key\n");
-	//			break;
-	//		case XCB_MOTION_NOTIFY:
-	//			printf("pointer motion\n");
-	//			break;
-	//		default:
-	//			break;
-	//	}
-	//	free(e);
-	//}
-	//xcb_ungrab_pointer(connection, XCB_TIME_CURRENT_TIME);
+	xcb_ungrab_pointer(connection, XCB_TIME_CURRENT_TIME);
 }
