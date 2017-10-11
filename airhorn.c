@@ -1,6 +1,17 @@
 #include "airhorn.h"
 #define EVENT_MASK ~0x80
 
+// generate ids for graphics context and pixmap and load pixmap. Graphics context is for the root window.
+void *setup_pixmap(xcb_connection_t *connection, xcb_screen_t screen, xcb_pixmap_t *pixmap_ptr, xcb_gcontext_t *gc_id) {
+	const int PIX_WIDTH = 6;
+	const int PIX_HEIGHT = 6;
+	*pixmap_ptr = xcb_generate_id(connection);
+	xcb_void_cookie_t cookie = xcb_create_pixmap(connection, XCB_COPY_FROM_PARENT, *pixmap_ptr, screen.root, PIX_WIDTH, PIX_HEIGHT);
+	*gc_id = xcb_generate_id(connection);
+	u_int32_t value[] = {screen.black_pixel};
+	xcb_create_gc(connection, *gc_id, screen.root, XCB_GC_FOREGROUND, value);
+}
+
 int main(int argc, char *argv[]) {
 	// Setup xcb connection
 	xcb_generic_event_t *e;
@@ -17,6 +28,10 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}  
 	free(error);
+	// setup pixmaps and graphics context pointers
+	xcb_pixmap_t *pixmap_p = malloc(sizeof(xcb_pixmap_t));
+	xcb_gcontext_t *gc_p = malloc(sizeof(xcb_gcontext_t));
+	setup_pixmap(connection, *screen, pixmap_p, gc_p);
 	do {
 		sleep(0.05);
 		// Replay button press events
