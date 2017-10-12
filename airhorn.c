@@ -1,8 +1,10 @@
 #include "airhorn.h"
 #define EVENT_MASK ~0x80
+#define CROSSHAIR_WIDTH 32
+#define CROSSHAIR_HEIGHT 32
 
 // generate ids for graphics context and pixmap and load pixmap. Graphics context is for the root window.
-void *setup_pixmap(xcb_connection_t *connection, xcb_screen_t screen, xcb_pixmap_t *pixmap_ptr, xcb_gcontext_t *gc_id) {
+void setup_pixmap(xcb_connection_t *connection, xcb_screen_t screen, xcb_pixmap_t *pixmap_ptr, xcb_gcontext_t *gc_id) {
 	const int PIX_WIDTH = 6;
 	const int PIX_HEIGHT = 6;
 	*pixmap_ptr = xcb_generate_id(connection);
@@ -10,6 +12,10 @@ void *setup_pixmap(xcb_connection_t *connection, xcb_screen_t screen, xcb_pixmap
 	*gc_id = xcb_generate_id(connection);
 	u_int32_t value[] = {screen.black_pixel};
 	xcb_create_gc(connection, *gc_id, screen.root, XCB_GC_FOREGROUND, value);
+}
+
+xcb_image_t *load_crosshair_img(xcb_connection_t *c) {
+	return xcb_image_create_native(c, CROSSHAIR_WIDTH, CROSSHAIR_HEIGHT, XCB_IMAGE_FORMAT_Z_PIXMAP, 8, crosshair_xpm, CROSSHAIR_HEIGHT * CROSSHAIR_WIDTH * 3, crosshair_xpm[0]);
 }
 
 int main(int argc, char *argv[]) {
@@ -31,6 +37,8 @@ int main(int argc, char *argv[]) {
 	// setup pixmaps and graphics context pointers
 	xcb_pixmap_t *pixmap_p = malloc(sizeof(xcb_pixmap_t));
 	xcb_gcontext_t *gc_p = malloc(sizeof(xcb_gcontext_t));
+	// load crosshait image for cursor
+	xcb_image_t *img = load_crosshair_img(connection);
 	setup_pixmap(connection, *screen, pixmap_p, gc_p);
 	do {
 		sleep(0.05);
@@ -59,4 +67,5 @@ int main(int argc, char *argv[]) {
 		free(e);
 	} while(1);
 	xcb_ungrab_pointer(connection, XCB_TIME_CURRENT_TIME);
+	xcb_free_pixmap(connection, *pixmap_p);
 }
