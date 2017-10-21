@@ -13,5 +13,5 @@
 #include <err.h>
 
 #include <math.h>
-#include "crosshair.xpm"
-extern char *crosshair_xpm[];
+#include "crosshair.c"
+extern struct gimp_image;
