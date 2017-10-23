@@ -23,7 +23,7 @@ void setup_pixmap(xcb_connection_t *connection, xcb_window_t window, xcb_pixmap_
 	*pixmap_ptr = xcb_generate_id(connection);
 	xcb_void_cookie_t cookie = xcb_create_pixmap(connection, XCB_COPY_FROM_PARENT, *pixmap_ptr, window, img->width, img->height);// this segfaults, apparently img->width and img->height point to the wrong place
 	*gcontext = xcb_generate_id(connection);
-	u_int32_t values[] = {window.black_pixel, 0xffffff};
+	u_int32_t values[] = {0x000000, 0xffffff};
 	xcb_create_gc(connection, *gcontext, *pixmap_ptr, XCB_GC_FOREGROUND | XCB_GC_BACKGROUND, values);
 	xcb_void_cookie_t put_img_cookie = xcb_image_put(connection, *pixmap_ptr, *gcontext, img, 0, 0, 0);// this segfaults
 	xcb_generic_error_t *error = xcb_request_check(connection, put_img_cookie);
